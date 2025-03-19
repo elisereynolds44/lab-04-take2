@@ -15,20 +15,17 @@ df = pd.read_csv("assets/historic.csv")
 
 history_dataframe = pd.DataFrame(columns=["Cash", "Stock", "Start amount $", "Start Year", "Number of Years"])
 
-def new_history (cash, stocks, start_bal, start_yr, planning_time):
-    global history_dataframe
+user_history = []
 
-    baseline = {
-        "cash": [cash],
-        "stocks": [stocks],
-        "start_bal": [start_bal],
-        "start_yr": [start_yr],
-        "planning_time": [planning_time],
-    }
-
-    baseline_df = pd.DataFrame(baseline) # changing from list to data frame
-    history_dataframe = pd.concat([history_dataframe, baseline_df], ignore_index=True)
-    history_pointer = len(history_dataframe) - 1
+def save_data(cash, stocks, starting_amount, start_yr, planning_time):
+    global user_history
+    user_history.append({
+        "Cash": float(cash) if cash else 0,
+        "Stock": float(stocks) if stocks else 0,
+        "Start amount $": int(starting_amount) if starting_amount else 0,
+        "Start Year": int(start_yr) if start_yr else 0,
+        "Number of Years": int(planning_time) if planning_time else 0,
+    })
 
 
 history_pointer = -1
@@ -136,14 +133,16 @@ total_returns_table = dash_table.DataTable(
 
 history_table = dash_table.DataTable(
     id="history_table",
-    columns=[{"id": "Year", "name": "Year", "type": "text"}]
-    + [
-        {"id": col, "name": col, "type": "numeric", "format": {"specifier": "$,.0f"}}
-        for col in ["Cash", "Stock", "Start amount $", "Start Year", "Number of Years", "Ending Amount", "Selected Time Period"]
+    columns=[{"id": "Cash", "name": "Cash", "type": "numeric"},
+            {"id": "Stock", "name": "Stock", "type": "numeric"},
+            {"id": "Start Amount $", "name": "Start amount $", "type": "numeric"},
+            {"id": "Start Year", "name": "Start Year", "type": "numeric"},
+            {"id": "Number of Years", "name": "Number of Years", "type": "numeric"}
     ],
     page_size=15,
     style_table={"overflowX": "scroll"},
 )
+
 
 annual_returns_pct_table = dash_table.DataTable(
     id="annual_returns_pct",
@@ -526,18 +525,6 @@ tabs = dbc.Tabs(
 Helper functions to calculate investment results, cagr and worst periods
 """
 
-user_history = []
-
-def save_data(cash, stocks, start_bal, start_yr, planning_time):
-    global user_history
-    user_history.append({
-        "cash": [cash],
-        "stocks": [stocks],
-        "start_bal": [start_bal],
-        "start_yr": [start_yr],
-        "planning_time": [planning_time],
-    })
-
 def backtest(stocks, cash, start_bal, nper, start_yr):
     """calculates the investment returns for user selected asset allocation,
     rebalanced annually and returns a dataframe
@@ -679,11 +666,15 @@ Callbacks
     Input("planning_time", "value"),
 )
 
-def update_history(cash, stocks, start_bal, start_yr, planning_time):
+def update_history(cash, stocks, starting_amount, start_yr, planning_time):
     # dict for current users attempt:
-    global history_dataframe
-    new_history(cash, stocks, start_bal, start_yr, planning_time)
-    return history_dataframe.to_dict("records")
+    global user_history
+
+    if None not in (cash, stocks, starting_amount, start_yr, planning_time):
+        save_data(cash, stocks, starting_amount, start_yr, planning_time)
+
+    history_df = pd.DataFrame(user_history)
+    return history_df.to_dict("records")
 
 @app.callback(
     [Output("bar_graph", "figure"),
