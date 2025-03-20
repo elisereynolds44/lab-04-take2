@@ -13,16 +13,16 @@ app = Dash(
 #  make dataframe from  spreadsheet:
 df = pd.read_csv("assets/historic.csv")
 
-history_dataframe = pd.DataFrame(columns=["Cash", "Stock", "Start amount $", "Start Year", "Number of Years"])
+history_dataframe = pd.DataFrame(columns=["Cash", "Stock", "Start Amount $", "Start Year", "Number of Years"])
 
 user_history = []
 
-def save_data(cash, stocks, starting_amount, start_yr, planning_time):
+def save_data(cash, stocks, start_bal, start_yr, planning_time):
     global user_history
     user_history.append({
         "Cash": float(cash) if cash else 0,
         "Stock": float(stocks) if stocks else 0,
-        "Start amount $": int(starting_amount) if starting_amount else 0,
+        "Start Amount $": float(start_bal) if start_bal else 0,
         "Start Year": int(start_yr) if start_yr else 0,
         "Number of Years": int(planning_time) if planning_time else 0,
     })
@@ -135,7 +135,7 @@ history_table = dash_table.DataTable(
     id="history_table",
     columns=[{"id": "Cash", "name": "Cash", "type": "numeric"},
             {"id": "Stock", "name": "Stock", "type": "numeric"},
-            {"id": "Start Amount $", "name": "Start amount $", "type": "numeric"},
+            {"id": "Start Amount $", "name": "Start Amount $", "type": "numeric"},
             {"id": "Start Year", "name": "Start Year", "type": "numeric"},
             {"id": "Number of Years", "name": "Number of Years", "type": "numeric"}
     ],
@@ -302,6 +302,17 @@ Make Tabs
 
 asset_allocation_card = dbc.Card(asset_allocation_text, className="mt-2")
 
+# previous_button = dbc.Button(
+#     "Previous",
+#     id="previous-setting",
+#     color="primary",
+#     disabled=True, # disabled since no history yet
+#     className="mt-2",
+# )
+#
+# history_store = dcc.Store(id="history-store", data=[])
+# history_index = -1
+
 # task 4 part A
 bonds_allocation = html.Div(
     id='bonds-allocation',
@@ -335,6 +346,8 @@ slider_card = dbc.Card(
             included=False,
         ),
         bonds_allocation,
+        # previous_button,
+        # history_index,
     ],
     body=True,
     className="mt-4",
@@ -613,6 +626,13 @@ def worst(dff, asset):
 
 """
 ===========================================================================
+Previous Button 
+"""
+
+
+
+"""
+===========================================================================
 Main Layout
 """
 
@@ -666,15 +686,44 @@ Callbacks
     Input("planning_time", "value"),
 )
 
-def update_history(cash, stocks, starting_amount, start_yr, planning_time):
+def update_history(cash, stocks, start_bal, start_yr, planning_time):
     # dict for current users attempt:
     global user_history
 
-    if None not in (cash, stocks, starting_amount, start_yr, planning_time):
-        save_data(cash, stocks, starting_amount, start_yr, planning_time)
+    if None not in (cash, stocks, start_bal, start_yr, planning_time):
+        save_data(cash, stocks, start_bal, start_yr, planning_time)
 
     history_df = pd.DataFrame(user_history)
     return history_df.to_dict("records")
+
+# @app.callback(
+#     [
+#         Output("cash", "value"),
+#         Output("stock_bond", "value"),
+#         Output("starting_amount", "value"),
+#         Output("start_yr", "value"),
+#         Output("planning_time", "value"),
+#     ],
+#     Input("previous-setting", "n-clicks"),
+#     prevent_initial_call=True,
+# )
+#
+# def restore_previous_setting(n_clicks):
+#     global history_index
+#
+#     if n_clicks and history_index > 0:
+#         history_index -= 1
+#         previous_entry = user_history[history_index]
+#
+#         return (
+#             previous_entry["Cash"],
+#             previous_entry["Stocks"],
+#             previous_entry["Start Amount $"],
+#             previous_entry["Start Year"],
+#             previous_entry["Number of Years"],
+#         )
+#
+#     return dash.no_update # no update if already at first entry
 
 @app.callback(
     [Output("bar_graph", "figure"),
